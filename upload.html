@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.283.1.min.js"></script>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css">
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+
+  <style type="text/css">
+      
+    .ui-progressbar {
+      position: relative;
+      color:#362878;
+      width:650px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .progress-label {
+      position: absolute;
+      left: 50%;
+      top: 4px;
+      font-weight: bold;
+      text-shadow: 1px 1px 0 #fff;
+      margin-left:-40px;
+    }
+
+    .ui-widget-header {
+      border: 1px solid #E8D1CF;
+      background: #C3AEE0 url("images/ui-bg_highlight-soft_75_cccccc_1x100.png") 50% 50% repeat-x;
+      font-weight: bold;
+      margin-left:-40px;
+    }
+
+    </style>
+
+  </head>
+
+  <body>
+   
+
+      <h1>Upload a file using Cognito </h1>
+      <input id="fileUploadInput" class="uploadfield" type="file" >
+      <button class="file-upload"   class="btn btn-primary">
+          Upload now
+      </button> 
+      <title>jQuery UI Progressbar - Custom Label</title>
+      <div id="progressbar"><div class="progress-label"></div></div>
+
+  </body>
+
+  <script type="text/javascript">
+
+$(function() {
+
+ var progressbar = $( "#progressbar" ),
+    progressLabel = $( ".progress-label" );
+  
+var bucketName = 's3-cognito-fileupload-test';
+  var bucketRegion = 'us-east-1';
+  var IdentityPoolId = "us-east-1:31da04a1-9cfa-469a-81b2-7e9582712fb1";
+
+  AWS.config.update({
+    region: bucketRegion,
+    credentials: new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: IdentityPoolId
+    })
+  });
+
+  var s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    params: {Bucket: bucketName}
+  });
+
+
+  function uploadtoS3(file) {
+
+    var fileName = file.name;
+    var destKey = encodeURIComponent(fileName);
+    console.log(destKey);
+
+    var params = {
+      bucket: bucketName,
+      Key: destKey,
+      Body: file,
+      ACL: 'private'
+    };
+    progressbar.progressbar( "value", 0 );
+    s3.upload(params).on('httpUploadProgress', function(evt) {
+        var percent = parseInt((evt.loaded * 100) / evt.total);  //This is the result
+        progressbar.progressbar( "value", percent );
+        
+    }).send(function(err, data) {
+        alert("File uploaded successfully.");
+    });
+
+  }
+  $('.file-upload').click(function(evt) {
+    var files = document.getElementById('fileUploadInput').files;
+    if (!files.length) {
+       alert('Please choose a file to upload first.');return;
+    }
+    var file = files[0];
+
+    if (file) {
+      uploadtoS3(file);
+    }
+  })
+
+  progressbar.progressbar({
+    value: false,
+    change: function() {
+      progressLabel.text( progressbar.progressbar( "value" ) + "%" );
+    },
+    complete: function() {
+      progressLabel.text( "Complete!" );
+    }
+  });
+
+  
+
+});
+
+
+
+  
+
+
+
+ 
+  </script>
+</html>
